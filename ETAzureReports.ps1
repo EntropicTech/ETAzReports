@@ -3,21 +3,12 @@ function Get-ETAzVMInfo
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
-        [string]
-        $Resource,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
-        [string]
-        $ResourceGroup,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
         [PSObject]
         $VM
     )
 
-    Write-Host 'Virtual Machine Specs' -ForegroundColor Green
+    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Magenta
+    Write-Host 'Virtual Machine Specs' -ForegroundColor Magenta
 
     # Create PSObject and print out VM Info.
     [PSCustomObject]@{
@@ -35,20 +26,11 @@ function Get-ETAzNIC
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
-        [string]
-        $Resource,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
-        [string]
-        $ResourceGroup,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
         [PSObject]
         $VM
     )
 
+    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
     Write-Host 'Network Adapters' -ForegroundColor Green
 
 	# Create PSObject of NICs for VM.
@@ -72,23 +54,14 @@ function Get-ETAzPIP
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
-        [string]
-        $Resource,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
-        [string]
-        $ResourceGroup,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
         [PSObject]
         $VM
     )
 
     Write-Host 'Public IP' -ForegroundColor Green
+    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
-    $PublicIPPull = Get-AzPublicIpAddress -ResourceGroupName $ResourceGroup | Where-Object { $_.IpConfiguration.Id -like "*$Resource*"}
+    $PublicIPPull = Get-AzPublicIpAddress -ResourceGroupName $VM.ResourceGroupName | Where-Object { $_.IpConfiguration.Id -like "*$Resource*"}
     foreach ($pip in $PublicIPPull)
     {
     	[PSCustomObject]@{
@@ -105,21 +78,12 @@ function Get-ETAzStorage
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
-        [string]
-        $Resource,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
-        [string]
-        $ResourceGroup,
-
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
         [PSObject]
         $VM
     )
 
     Write-Host 'VM Disks' -ForegroundColor Green
+    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
     # Create PSObject of Disks for VM.
 	$VMDisks = @()
@@ -157,7 +121,6 @@ function Get-ETAzBackup
     $jobsArray = @()
  
     Do {
-
         $StartDate = (Get-Date).AddDays($startingPoint)
         $EndDate = (Get-Date).AddDays($finishingPoint)
         $RP = Get-AzRecoveryServicesBackupRecoveryPoint -Item $BackupItem -StartDate $Startdate.ToUniversalTime() -EndDate $Enddate.ToUniversalTime() -VaultId $vault.ID
@@ -165,7 +128,7 @@ function Get-ETAzBackup
         $startingPoint = $startingPoint - 25
         $finishingPoint = $finishingPoint -25
     } until ($startingPoint -le -($retentionDays))
-    $jobsArray | FT -AutoSize -Property RecoveryPointid, RecoveryPointTime, RecoveryPointType 
+    $jobsArray | Format-Table -AutoSize -Property RecoveryPointid, RecoveryPointTime, RecoveryPointType 
 }
 
 Function Get-ETAzReports
@@ -215,10 +178,10 @@ Function Get-ETAzReports
         'Microsoft.Compute/virtualMachines'
         {
             $VM = Get-AzVM -Name $Resource -ResourceGroupName $ResourceGroup
-            Get-ETAzVMInfo -Resource $Resource -ResourceGroup $ResourceGroup -VM $VM | Format-Table -AutoSize
-            Get-ETAzNIC -Resource $Resource -ResourceGroup $ResourceGroup -VM $VM | Format-Table -AutoSize
-            Get-ETAzPIP -Resource $Resource -ResourceGroup $ResourceGroup -VM $VM | Format-Table -AutoSize
-            Get-ETAzStorage -Resource $Resource -ResourceGroup $ResourceGroup -VM $VM | Format-Table -AutoSize
+            Get-ETAzVMInfo -VM $VM #| Format-Table -AutoSize
+            Get-ETAzNIC -VM $VM | Format-Table -AutoSize
+            Get-ETAzPIP -VM $VM | Format-Table -AutoSize
+            Get-ETAzStorage -VM $VM | Format-Table -AutoSize
         }
         Default
         {
