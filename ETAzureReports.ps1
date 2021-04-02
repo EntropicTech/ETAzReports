@@ -7,9 +7,6 @@ function Get-ETAzVMInfo
         $VM
     )
 
-    Write-Host 'Virtual Machine Specs' -ForegroundColor Green
-    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
-
     # Create PSObject and print out VM Info.
     [PSCustomObject]@{
 		VMName = $VM.Name
@@ -29,9 +26,6 @@ function Get-ETAzNIC
         [PSObject]
         $VM
     )
-
-    Write-Host 'Network Adapters' -ForegroundColor Green
-    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
 	# Create PSObject of NICs for VM.
 	$VMNICPull = $VM.NetworkProfile.NetworkInterfaces | Select-Object ID
@@ -58,9 +52,6 @@ function Get-ETAzPIP
         $VM
     )
 
-    Write-Host 'Public IP' -ForegroundColor Green
-    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
-
     $PublicIPPull = Get-AzPublicIpAddress -ResourceGroupName $VM.ResourceGroupName | Where-Object { $_.IpConfiguration.Id -like "*$Resource*" }
     foreach ($pip in $PublicIPPull)
     {
@@ -81,9 +72,6 @@ function Get-ETAzDisks
         [PSObject]
         $VM
     )
-
-    Write-Host 'VM Disks' -ForegroundColor Green
-    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
     # Create PSObject of Disks for VM.
 	$VMDisks = @()
@@ -182,7 +170,7 @@ Function Get-ETAzReports
     }
     catch
     {
-        Write-Error 'Resource not found!'       
+        Write-Error 'Could not connect to Azure!'       
     }
 
     # Gather Resource information for $Resource.
@@ -192,7 +180,7 @@ Function Get-ETAzReports
     }
     catch
     {
-        Write-Error 'Something bad3'
+        Write-Error 'Could not find resource!'
     }
 
     # Run scripts appropriate for the type of resource found.
@@ -201,9 +189,20 @@ Function Get-ETAzReports
         'Microsoft.Compute/virtualMachines'
         {
             $VM = Get-AzVM -Name $AccountInfo.Resource -ResourceGroupName $AccountInfo.ResourceGroup
+            Write-Host 'Virtual Machine Specs' -ForegroundColor Green
+            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
             Get-ETAzVMInfo -VM $VM #| Format-Table -AutoSize
+            
+            Write-Host 'Network Adapters' -ForegroundColor Green
+            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green 
             Get-ETAzNIC -VM $VM #| Format-Table -AutoSize
+            
+            Write-Host 'Public IP' -ForegroundColor Green
+            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
             Get-ETAzPIP -VM $VM #| Format-Table -AutoSize
+            
+            Write-Host 'VM Disks' -ForegroundColor Green
+            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
             Get-ETAzDisks -VM $VM | Format-Table -AutoSize
         }
         Default
