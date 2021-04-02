@@ -134,38 +134,60 @@ function Get-ETAzBackup
 Function Get-ETAzReports
 {
     Param(
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
+        [parameter(Mandatory=$False)]
         [string]
         $Resource,
 
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
+        [parameter(Mandatory=$False)]
         [string]
         $ResourceGroup,
 
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullorEmpty()]
+        [parameter(Mandatory=$False)]
         [string]
-        $Subscription
+        $Subscription,
+
+        [parameter(Mandatory=$False)]
+        [string]
+        $ResourceID
     )
 
     Clear-Host
 
+    if($Resource -and $ResourceGroup -and $Subscription)
+    {
+        $AccountInfo = [PSCustomObject]@{
+            Subscription = $Subscription
+            ResourceGroup = $ResourceGroup
+            Resource = $Resource
+        }
+    }
+    elseif($ResourceID)
+    {
+        $AccountInfo = [PSCustomObject]@{
+            Subscription = $ResourceID.Split('/')[2]
+            ResourceGroup = $ResourceID.Split('/')[4]
+            Resource = $ResourceID.Split('/')[8].Trim('"')
+        }
+    }
+    else
+    {
+        Write-Host 'Invalid Input. Try either -Resource -ResourceGroup and -Subscription together or just the -ResourceID' -ForegroundColor Red    
+    }
+
     # Connect to the Azure account.
     try
     {
-        Connect-AzAccount -Subscription $Subscription | Out-Null
+        Connect-AzAccount -Subscription $AccountInfo.Subscription | Out-Null
     }
     catch
     {
-        Write-Error 'Something bad2'       
+        Write-Error 'Resource not found!'       
     }
 
     # Gather Resource information for $Resource.
     try
     {
-	    $ResourceType = (Get-AzResource -ResourceName $Resource ).ResourceType   
+	    $ResourceType = (Get-AzResource -ResourceName $AccountInfo.Resource ).ResourceType
     }
     catch
     {
@@ -177,7 +199,7 @@ Function Get-ETAzReports
     {
         'Microsoft.Compute/virtualMachines'
         {
-            $VM = Get-AzVM -Name $Resource -ResourceGroupName $ResourceGroup
+            $VM = Get-AzVM -Name $AccountInfo.Resource -ResourceGroupName $AccountInfo.ResourceGroup
             Get-ETAzVMInfo -VM $VM #| Format-Table -AutoSize
             Get-ETAzNIC -VM $VM | Format-Table -AutoSize
             Get-ETAzPIP -VM $VM | Format-Table -AutoSize
