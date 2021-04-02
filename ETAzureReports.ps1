@@ -7,8 +7,8 @@ function Get-ETAzVMInfo
         $VM
     )
 
-    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Magenta
-    Write-Host 'Virtual Machine Specs' -ForegroundColor Magenta
+    Write-Host 'Virtual Machine Specs' -ForegroundColor Green
+    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
     # Create PSObject and print out VM Info.
     [PSCustomObject]@{
@@ -30,8 +30,8 @@ function Get-ETAzNIC
         $VM
     )
 
-    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
     Write-Host 'Network Adapters' -ForegroundColor Green
+    Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
 	# Create PSObject of NICs for VM.
 	$VMNICPull = $VM.NetworkProfile.NetworkInterfaces | Select-Object ID
@@ -41,7 +41,7 @@ function Get-ETAzNIC
 		$NICInfo = Get-AzNetworkInterface -Name $NICResourceName
 		$NICIPInfo = $NICInfo | Get-AzNetworkInterfaceIpConfig | Select-Object ProvisioningState,PrivateIpAddress,PrivateIpAllocationMethod
 		[PSCustomObject]@{
-			NIC = $NICResourceName
+			Name = $NICResourceName
 			IPAddress = $NICIPInfo.PrivateIPAddress
 			IPAllocation = $NICIPInfo.PrivateIpAllocationMethod
 			State = $NICInfo.ProvisioningState
@@ -61,11 +61,11 @@ function Get-ETAzPIP
     Write-Host 'Public IP' -ForegroundColor Green
     Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
 
-    $PublicIPPull = Get-AzPublicIpAddress -ResourceGroupName $VM.ResourceGroupName | Where-Object { $_.IpConfiguration.Id -like "*$Resource*"}
+    $PublicIPPull = Get-AzPublicIpAddress -ResourceGroupName $VM.ResourceGroupName | Where-Object { $_.IpConfiguration.Id -like "*$Resource*" }
     foreach ($pip in $PublicIPPull)
     {
     	[PSCustomObject]@{
-		    PublicIP = $pip.Name
+		    Name = $pip.Name
 		    IPAddress = $pip.IPAddress
 		    IPAllocation = $pip.PublicIpAllocationMethod
 		    State = $pip.ProvisioningState
@@ -73,7 +73,7 @@ function Get-ETAzPIP
     }
 }  
 
-function Get-ETAzStorage
+function Get-ETAzDisks
 {
     Param(
         [parameter(Mandatory=$True)]
@@ -133,7 +133,8 @@ function Get-ETAzBackup
 
 Function Get-ETAzReports
 {
-    Param(
+    Param
+    (
         [parameter(Mandatory=$False)]
         [string]
         $Resource,
@@ -201,9 +202,9 @@ Function Get-ETAzReports
         {
             $VM = Get-AzVM -Name $AccountInfo.Resource -ResourceGroupName $AccountInfo.ResourceGroup
             Get-ETAzVMInfo -VM $VM #| Format-Table -AutoSize
-            Get-ETAzNIC -VM $VM | Format-Table -AutoSize
-            Get-ETAzPIP -VM $VM | Format-Table -AutoSize
-            Get-ETAzStorage -VM $VM | Format-Table -AutoSize
+            Get-ETAzNIC -VM $VM #| Format-Table -AutoSize
+            Get-ETAzPIP -VM $VM #| Format-Table -AutoSize
+            Get-ETAzDisks -VM $VM | Format-Table -AutoSize
         }
         Default
         {
