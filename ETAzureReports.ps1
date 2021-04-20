@@ -155,7 +155,18 @@ Function Get-ETAzReports
         $AccountInfo = [PSCustomObject]@{
             Subscription = $ResourceID.Split('/')[2]
             ResourceGroup = $ResourceID.Split('/')[4]
-            Resource = $ResourceID.Split('/')[8].Trim('"')
+            Resource = if ($ResourceID.Split('/')[9].Trim('"') -eq 'DATABASES')
+            {
+                #$ResourceID.Split('/')[10].Trim('"')
+                [PSCustomObject]@{
+                    Server = $ResourceID.Split('/')[8].Trim('"')
+                    Database = $ResourceID.Split('/')[10].Trim('"') 
+                }
+            }
+            else
+            {
+                $ResourceID.Split('/')[8].Trim('"')    
+            }
         }
     }
     else
@@ -176,7 +187,7 @@ Function Get-ETAzReports
     # Gather Resource information for $Resource.
     try
     {
-	    $ResourceType = (Get-AzResource -ResourceName $AccountInfo.Resource ).ResourceType
+	    $ResourceType = (Get-AzResource -ResourceName $AccountInfo.Resource).ResourceType
     }
     catch
     {
@@ -204,6 +215,14 @@ Function Get-ETAzReports
             Write-Host 'VM Disks' -ForegroundColor Green
             Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
             Get-ETAzDisks -VM $VM | Format-Table -AutoSize
+        }
+        'Microsoft.Sql/servers/databases'
+        {
+            $Database = Get-AzResource -Name $AccountInfo.Resource.Database -ResourceGroupName $Accountinfo.ResourceGroup
+            $Server = Get-AzSqlServer -ServerName $AccountInfo.Resource.Server -ResourceGroupName $AccountInfo.ResourceGroup | Where-Object DatabaseName -eq $AccountInfo.Resource.Database
+            
+            $Database
+            $Server
         }
         Default
         {
