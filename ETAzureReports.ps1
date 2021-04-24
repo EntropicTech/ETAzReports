@@ -13,7 +13,7 @@ function Get-ETAzVMInfo
 		ResourceGroup = $VM.ResourceGroupName
 		Location = $VM.Location
 		Size = $VM.HardwareProfile.VmSize
-		OS = $VM.StorageProfile.ImageReference.Sku
+		OperatingSystem = $VM.StorageProfile.ImageReference.Sku
 		ProvisioningState = $VM.ProvisioningState
 	}
 }
@@ -52,6 +52,7 @@ function Get-ETAzPIP
         $VM
     )
 
+    # Create PSObject of PIPs for VM.
     $PublicIPPull = Get-AzPublicIpAddress -ResourceGroupName $VM.ResourceGroupName | Where-Object { $_.IpConfiguration.Id -like "*$Resource*" }
     foreach ($pip in $PublicIPPull)
     {
@@ -140,8 +141,11 @@ Function Get-ETAzReports
         $ResourceID
     )
 
+    $ErrorActionPreference = Stop
+
     Clear-Host
 
+    # Validate what input user gave us and then create the PSObject we will use to pull information on the resource.
     if($Resource -and $ResourceGroup -and $Subscription)
     {
         $AccountInfo = [PSCustomObject]@{
@@ -201,20 +205,24 @@ Function Get-ETAzReports
         {
             $VM = Get-AzVM -Name $AccountInfo.Resource -ResourceGroupName $AccountInfo.ResourceGroup
             Write-Host 'Virtual Machine Specs' -ForegroundColor Green
-            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
-            Get-ETAzVMInfo -VM $VM #| Format-Table -AutoSize
+            Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
+            $VMSpecs = Get-ETAzVMInfo -VM $VM
+            Write-Output $VMSpecs | Format-Table -AutoSize
             
             Write-Host 'Network Adapters' -ForegroundColor Green
-            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green 
-            Get-ETAzNIC -VM $VM #| Format-Table -AutoSize
+            Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
+            $VMNics = Get-ETAzNIC -VM $VM
+            Write-Output $VMNics | Format-Table -AutoSize
             
             Write-Host 'Public IP' -ForegroundColor Green
-            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green
-            Get-ETAzPIP -VM $VM #| Format-Table -AutoSize
+            Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
+            $VMPIP = Get-ETAzPIP -VM $VM
+            Write-Output $VMPIP | Format-Table -AutoSize
             
             Write-Host 'VM Disks' -ForegroundColor Green
-            Write-Host '-------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
-            Get-ETAzDisks -VM $VM | Format-Table -AutoSize
+            Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
+            $Disks = Get-ETAzDisks -VM $VM
+            Write-Output $Disks | Format-Table -AutoSize
         }
         'Microsoft.Sql/servers/databases'
         {
@@ -223,6 +231,18 @@ Function Get-ETAzReports
             
             $Database
             $Server
+        }
+        'Microsoft.Web/serverFarms'
+        {
+            Write-Host 'Nothing yet for App Service Plans. :('
+        }
+        'Microsoft.Web/sites'
+        {
+            Write-Host 'Nothing yet for App services. Insert sad face.'
+        }
+        'Microsoft.Storage/storageAccounts'
+        {
+            Write-Host 'Nothing yet for Storage accounts.'
         }
         Default
         {
