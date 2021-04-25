@@ -91,6 +91,38 @@ function Get-ETAzDisks
 	}
 }
 
+function Get-ETAzDatabase
+{
+    Param(
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullorEmpty()]
+        [String]
+        $ServerName,
+
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullorEmpty()]
+        [String]
+        $ResourceGroup,
+
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullorEmpty()]
+        [String]
+        $DatabaseName
+    )
+
+	# Create PSObject of SQL Database.
+	$Database = (Get-AzSqlDatabase -ServerName $ServerName -ResourceGroupName $ResourceGroup).Where{ $_.DatabaseName -eq $DatabaseName }
+    [PSCustomObject]@{
+        DatabaseName = $Database.DatabaseName
+        SQLServer = $Database.ServerName
+        ResourceGroup = $Database.ResourceGroupName
+        Location = $Database.Location
+        SKU = $Database.SKUName + ' ' + $Database.CurrentServiceObjectiveName + ': ' + $Database.Capacity + ' DTUs'
+        BackupRedundency = $Database.BackupStorageRedundancy
+        EarliestBackup = $Database.EarliestRestoreDate
+    }
+}
+
 function Get-ETAzBackup
 {
     # Create PSObject of backups for VM.
@@ -156,21 +188,22 @@ Function Get-ETAzReports
     }
     elseif($ResourceID)
     {
-        $AccountInfo = [PSCustomObject]@{
-            Subscription = $ResourceID.Split('/')[2]
-            ResourceGroup = $ResourceID.Split('/')[4]
-            Resource = if ($ResourceID.Split('/')[9].Trim('"') -eq 'DATABASES')
-            {
-                #$ResourceID.Split('/')[10].Trim('"')
-                [PSCustomObject]@{
-                    Server = $ResourceID.Split('/')[8].Trim('"')
-                    Database = $ResourceID.Split('/')[10].Trim('"') 
-                }
-            }
-            else
-            {
-                $ResourceID.Split('/')[8].Trim('"')    
-            }
+        if($ResourceID.Split('/')[9].Trim('"') -eq 'DATABASES')
+        {
+            $AccountInfo = [PSCustomObject]@{
+                Subscription = $ResourceID.Split('/')[2]
+                ResourceGroup = $ResourceID.Split('/')[4]
+                Resource = $ResourceID.Split('/')[8].Trim('"')
+                Database = $ResourceID.Split('/')[10].Trim('"')
+            }  
+        }
+        else
+        {
+            $AccountInfo = [PSCustomObject]@{
+                Subscription = $ResourceID.Split('/')[2]
+                ResourceGroup = $ResourceID.Split('/')[4]
+                Resource = $ResourceID.Split('/')[8].Trim('"')
+            }    
         }
     }
     else
@@ -224,13 +257,12 @@ Function Get-ETAzReports
             $Disks = Get-ETAzDisks -VM $VM
             Write-Output $Disks | Format-Table -AutoSize
         }
-        'Microsoft.Sql/servers/databases'
+        'Microsoft.Sql/servers'
         {
-            $Database = Get-AzResource -Name $AccountInfo.Resource.Database -ResourceGroupName $Accountinfo.ResourceGroup
-            $Server = Get-AzSqlServer -ServerName $AccountInfo.Resource.Server -ResourceGroupName $AccountInfo.ResourceGroup | Where-Object DatabaseName -eq $AccountInfo.Resource.Database
-            
-            $Database
-            $Server
+            Write-Host 'SQL Database' -ForegroundColor Green
+            Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
+            $Database = Get-ETAzDatabase -ServerName $AccountInfo.Resource -ResourceGroup $AccountInfo.ResourceGroup -Database $AccountInfo.Database
+            Write-Output $Database 
         }
         'Microsoft.Web/serverFarms'
         {
