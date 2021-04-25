@@ -1,5 +1,10 @@
 function Get-ETAzVMInfo
 {
+    <#
+        .SYNOPSIS
+            Get-ETAzVMInfo outputs a PSObject of basic information about a VM.
+    #>
+    [CmdletBinding()]
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
@@ -20,6 +25,11 @@ function Get-ETAzVMInfo
 
 function Get-ETAzNIC
 {
+    <#
+        .SYNOPSIS
+            Get-ETAzNIC outputs a PSObject of information about a NIC.
+    #>
+    [CmdletBinding()]
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
@@ -45,6 +55,11 @@ function Get-ETAzNIC
 
 function Get-ETAzPIP
 {
+    <#
+        .SYNOPSIS
+            Get-ETAzPIP outputs a PSObject of information about a PIP.
+    #>
+    [CmdletBinding()]
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
@@ -67,6 +82,11 @@ function Get-ETAzPIP
 
 function Get-ETAzDisks
 {
+    <#
+        .SYNOPSIS
+            Get-ETAzDisks outputs a PSObject of information about disks connected to a VM.
+    #>
+    [CmdletBinding()]
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
@@ -93,6 +113,11 @@ function Get-ETAzDisks
 
 function Get-ETAzDatabase
 {
+    <#
+        .SYNOPSIS
+            Get-ETAzDatabase outputs a PSObject of information about an Azure SQL Database.
+    #>
+    [CmdletBinding()]
     Param(
         [parameter(Mandatory=$True)]
         [ValidateNotNullorEmpty()]
@@ -125,13 +150,17 @@ function Get-ETAzDatabase
 
 function Get-ETAzBackup
 {
-    # Create PSObject of backups for VM.
+    <#
+        .SYNOPSIS
+            Get-ETAzReports outputs information about the selected Azure resource.
+    #>
+    [CmdletBinding()]
+    Param()
     # ------Variables--------------#
     $retentionDays = 730
     $vaultName = "ET-Pihole-Vault"
     $vaultResourceGroup = "ET-Pihole-01"
     $friendlyName = "$VMName"
-    #------------------------------#
 
     $vault = Get-AzRecoveryServicesVault -ResourceGroupName $vaultResourceGroup -Name $vaultName
     $Container = Get-AzRecoveryServicesBackupContainer -ContainerType AzureVM -Status Registered -FriendlyName $friendlyName -VaultId $vault.ID
@@ -154,7 +183,12 @@ function Get-ETAzBackup
 
 Function Get-ETAzReports
 {
-    Param
+    <#
+        .SYNOPSIS
+            Get-ETAzReports outputs information about the selected Azure resource.
+    #>
+    [CmdletBinding()]
+    Param   
     (
         [parameter(Mandatory=$False)]
         [string]
@@ -173,8 +207,8 @@ Function Get-ETAzReports
         $ResourceID
     )
 
+    # Setup
     $ErrorActionPreference = Stop
-
     Clear-Host
 
     # Validate what input user gave us and then create the PSObject we will use to pull information on the resource.
@@ -231,7 +265,7 @@ Function Get-ETAzReports
         Write-Error 'Could not find resource!'
     }
 
-    # Run scripts appropriate for the type of resource found.
+    # Pull and print information appropriate for the type of resource found.
     switch ($ResourceType)
     {
         'Microsoft.Compute/virtualMachines'
