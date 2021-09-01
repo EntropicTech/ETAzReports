@@ -156,6 +156,7 @@ function Get-ETAzBackup
     #>
     [CmdletBinding()]
     Param()
+
     # ------Variables--------------#
     $retentionDays = 730
     $vaultName = "ET-Pihole-Vault"
@@ -252,7 +253,8 @@ Function Get-ETAzReports
     }
     catch
     {
-        Write-Error 'Could not connect to Azure!'       
+        Write-Error 'Could not connect to Azure!'
+        Write-Host $_.Exception.Message -ForegroundColor Red       
     }
 
     # Gather Resource information for $Resource.
@@ -263,6 +265,7 @@ Function Get-ETAzReports
     catch
     {
         Write-Error 'Could not find resource!'
+        Write-Host $_.Exception.Message -ForegroundColor Red
     }
 
     # Pull and print information appropriate for the type of resource found.
@@ -290,6 +293,7 @@ Function Get-ETAzReports
             Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
             $Disks = Get-ETAzDisks -VM $VM
             Write-Output $Disks | Format-Table -AutoSize
+            Write-Host '--------------------------------------------------------------------------------------' -ForegroundColor Green -NoNewline
         }
         'Microsoft.Sql/servers'
         {
@@ -309,6 +313,24 @@ Function Get-ETAzReports
         'Microsoft.Storage/storageAccounts'
         {
             Write-Host 'Nothing yet for Storage accounts.'
+            $StorageAccount = Get-AzStorageAccount -ResourceGroupName $AccountInfo.ResourceGroup -Name $AccountInfo.Resource       
+            
+            # Get the storage account context    
+            $StorageAccountContext = $StorageAccount.Context    
+            
+            # List all the containers    
+            $Containers = Get-AzStorageContainer -Context $StorageAccountContext     
+            foreach($container in $Containers)    
+            {
+                write-host -ForegroundColor Yellow $container.Name    
+            }
+            
+            # List all the file shares    
+            $FileShares = Get-AzStorageContainer -Context $StorageAccountContext     
+            foreach($container in $Containers)    
+            {
+                write-host -ForegroundColor Yellow $container.Name    
+            }
         }
         Default
         {
